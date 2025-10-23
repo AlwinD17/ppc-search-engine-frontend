@@ -1,0 +1,119 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fascinate&family=Google+Sans+Code:ital,wght@0,300..800;1,300..800&family=Zen+Old+Mincho&display=swap');
+@import "tailwindcss";
+
+
+@layer base {
+    :root {
+      /* Tema claro por defecto */
+      --color-background: #F7F7F7;
+      --color-foreground: #212121;
+      --color-card: #ffffff;
+      --color-card-foreground: #212121;
+      --color-border: #e0e0e0;
+      --color-input: #ffffff;
+      
+      /* Colores de acento */
+      --color-primary: #FF5722;
+      --color-secondary: #7E57C2;
+      --color-hover: #FFC107;
+
+      --font-fascinate: 'Fascinate', system-ui, sans-serif;
+      --font-family-zen-old-mincho: 'Zen Old Mincho', system-ui, sans-serif;
+    }
+  
+    /* Tema oscuro */
+    [data-theme="dark"] {
+      --color-background: #181818;
+      --color-foreground: #F7F7F7;
+      --color-card: #242424;
+      --color-card-foreground: #F7F7F7;
+      --color-border: #3a3a3a;
+      --color-input: #242424;
+      
+      --color-primary: #FF5722;
+      --color-secondary: #673AB7;
+      --color-hover: #FFEB3B;
+      
+    }
+  html {
+    font-family: 'Google Sans Code', system-ui, sans-serif;
+    font-family-fascinate: 'Fascinate', system-ui, sans-serif;
+    font-family-zen-old-mincho: 'Zen Old Mincho', system-ui, sans-serif;
+  }
+  
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+    background-color: var(--color-primary-500);
+    color: white;
+  }
+  
+  .btn-primary:hover {
+    background-color: var(--color-accent-500);
+  }
+  
+  .btn-secondary {
+    @apply font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+    background-color: var(--color-secondary-500);
+    color: white;
+  }
+  
+  .btn-secondary:hover {
+    background-color: var(--color-secondary-600);
+  }
+  
+  .input-field {
+    @apply w-full px-4 py-2 rounded-lg outline-none transition-all duration-200;
+    background-color: var(--color-input);
+    border: 1px solid var(--color-border);
+  }
+  
+  .input-field:focus {
+    @apply ring-2;
+    border-color: transparent;
+    --tw-ring-color: var(--color-ring);
+  }
+  
+  .card {
+    @apply rounded-lg shadow-sm p-6;
+    background-color: var(--color-card);
+    color: var(--color-card-foreground);
+    border: 1px solid var(--color-border);
+  }
+  
+  .search-result-card {
+    @apply rounded-lg shadow-sm p-4 transition-all duration-200;
+    background-color: var(--color-card);
+    color: var(--color-card-foreground);
+    border: 1px solid var(--color-border);
+  }
+
+  .search-result-card:hover {
+    @apply shadow-md;
+    border-color: var(--color-accent-500);
+  }
+
+  /* Utilidades para colores personalizados */
+  .text-primary {
+    color: var(--color-primary-500);
+  }
+
+  .bg-primary {
+    background-color: var(--color-primary-500);
+  }
+
+  .border-primary {
+    border-color: var(--color-primary-500);
+  }
+
+  .ring-primary {
+    --tw-ring-color: var(--color-primary-500);
+  }
+}
