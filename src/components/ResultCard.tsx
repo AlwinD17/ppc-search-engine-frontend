@@ -52,7 +52,14 @@ const ResultCard: React.FC<ResultCardProps> = ({ result, onClick }) => {
           />
         )}
         <div className="flex-1 min-w-0">
-          <p className="text-xs text-foreground opacity-50 truncate">{web.domain}</p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-foreground opacity-50 truncate">{web.domain}</p>
+            {web.relevance !== undefined && (
+              <span className="text-xs bg-background text-foreground opacity-60 px-2 py-0.5 rounded">
+                Score: {web.relevance.toFixed(2)}
+              </span>
+            )}
+          </div>
           <h3 className="text-base font-semibold text-primary hover:underline line-clamp-2">
             {web.title}
           </h3>

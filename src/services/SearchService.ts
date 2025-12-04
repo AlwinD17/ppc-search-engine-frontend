@@ -1,13 +1,24 @@
 import type { SearchService as ISearchService, SearchResult, ImageResult, PaginationInfo, SearchFilters } from '../types';
-import { mockWebResults, mockImageResults } from '../mocks';
+
+// API response from our Rust backend
+interface BackendSearchResult {
+  filename: string;
+  title: string;
+  snippet: string;
+  relevance: number;
+}
+
+interface BackendSearchResponse {
+  query: string;
+  total_results: number;
+  results: BackendSearchResult[];
+}
 
 class SearchService implements ISearchService {
   private baseUrl: string;
-  private apiKey?: string;
 
-  constructor(baseUrl: string = '', apiKey?: string) {
+  constructor(baseUrl: string = 'http://127.0.0.1:3000') {
     this.baseUrl = baseUrl;
-    this.apiKey = apiKey;
   }
 
   async searchText(
@@ -15,33 +26,65 @@ class SearchService implements ISearchService {
     filters: Partial<SearchFilters> = {}, 
     page: number = 1
   ): Promise<{ results: SearchResult[]; pagination: PaginationInfo }> {
-    // Simular delay de red
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    if (!query.trim()) {
+      return {
+        results: [],
+        pagination: {
+          currentPage: 1,
+          totalPages: 0,
+          totalResults: 0,
+          resultsPerPage: 50,
+          hasNextPage: false,
+          hasPreviousPage: false
+        }
+      };
+    }
 
-    // Filtrar resultados basados en la query
-    const filteredResults = mockWebResults.filter(result =>
-      result.title.toLowerCase().includes(query.toLowerCase()) ||
-      result.description.toLowerCase().includes(query.toLowerCase())
-    );
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/api/search?q=${encodeURIComponent(query)}&limit=50`
+      );
+      
+      if (!response.ok) {
+        throw new Error(`Search failed: ${response.statusText}`);
+      }
 
-    const resultsPerPage = 10;
-    const startIndex = (page - 1) * resultsPerPage;
-    const endIndex = startIndex + resultsPerPage;
-    const paginatedResults = filteredResults.slice(startIndex, endIndex);
+      const data: BackendSearchResponse = await response.json();
 
-    const pagination: PaginationInfo = {
-      currentPage: page,
-      totalPages: Math.ceil(filteredResults.length / resultsPerPage),
-      totalResults: filteredResults.length,
-      resultsPerPage,
-      hasNextPage: endIndex < filteredResults.length,
-      hasPreviousPage: page > 1
-    };
+      // Transform backend results to frontend format
+      const results: SearchResult[] = data.results.map((item, index) => ({
+        id: `${item.filename}-${index}`,
+        title: item.title || item.filename,
+        url: `#${item.filename}`, // Could be expanded to real URLs
+        description: item.snippet,
+        type: 'web' as const,
+        domain: item.filename,
+        relevance: item.relevance,
+      }));
 
-    return {
-      results: paginatedResults,
-      pagination
-    };
+      // Simple client-side pagination
+      const resultsPerPage = 10;
+      const startIndex = (page - 1) * resultsPerPage;
+      const endIndex = startIndex + resultsPerPage;
+      const paginatedResults = results.slice(startIndex, endIndex);
+
+      const pagination: PaginationInfo = {
+        currentPage: page,
+        totalPages: Math.ceil(results.length / resultsPerPage),
+        totalResults: data.total_results,
+        resultsPerPage,
+        hasNextPage: endIndex < results.length,
+        hasPreviousPage: page > 1
+      };
+
+      return {
+        results: paginatedResults,
+        pagination
+      };
+    } catch (error) {
+      console.error('Search error:', error);
+      throw error;
+    }
   }
 
   async searchImages(
@@ -49,32 +92,17 @@ class SearchService implements ISearchService {
     filters: Partial<SearchFilters> = {}, 
     page: number = 1
   ): Promise<{ results: ImageResult[]; pagination: PaginationInfo }> {
-    // Simular delay de red
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Filtrar resultados basados en la query
-    const filteredResults = mockImageResults.filter(result =>
-      result.title.toLowerCase().includes(query.toLowerCase()) ||
-      result.alt?.toLowerCase().includes(query.toLowerCase())
-    );
-
-    const resultsPerPage = 20;
-    const startIndex = (page - 1) * resultsPerPage;
-    const endIndex = startIndex + resultsPerPage;
-    const paginatedResults = filteredResults.slice(startIndex, endIndex);
-
-    const pagination: PaginationInfo = {
-      currentPage: page,
-      totalPages: Math.ceil(filteredResults.length / resultsPerPage),
-      totalResults: filteredResults.length,
-      resultsPerPage,
-      hasNextPage: endIndex < filteredResults.length,
-      hasPreviousPage: page > 1
-    };
-
+    // Image search not supported by our backend - return empty results
     return {
-      results: paginatedResults,
-      pagination
+      results: [],
+      pagination: {
+        currentPage: 1,
+        totalPages: 0,
+        totalResults: 0,
+        resultsPerPage: 20,
+        hasNextPage: false,
+        hasPreviousPage: false
+      }
     };
   }
 
@@ -83,31 +111,23 @@ class SearchService implements ISearchService {
     filters: Partial<SearchFilters> = {}, 
     page: number = 1
   ): Promise<{ results: (SearchResult | ImageResult)[]; pagination: PaginationInfo }> {
-    // Simular delay de red
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    // En una implementación real, aquí enviarías la imagen al backend
-    // Por ahora, devolvemos resultados mock
-    const results = [...mockWebResults, ...mockImageResults];
-    
-    const resultsPerPage = 10;
-    const startIndex = (page - 1) * resultsPerPage;
-    const endIndex = startIndex + resultsPerPage;
-    const paginatedResults = results.slice(startIndex, endIndex);
-
-    const pagination: PaginationInfo = {
-      currentPage: page,
-      totalPages: Math.ceil(results.length / resultsPerPage),
-      totalResults: results.length,
-      resultsPerPage,
-      hasNextPage: endIndex < results.length,
-      hasPreviousPage: page > 1
-    };
-
+    // Image upload search not supported by our backend
     return {
-      results: paginatedResults,
-      pagination
+      results: [],
+      pagination: {
+        currentPage: 1,
+        totalPages: 0,
+        totalResults: 0,
+        resultsPerPage: 10,
+        hasNextPage: false,
+        hasPreviousPage: false
+      }
     };
+  }
+
+  async getSuggestions(query: string): Promise<string[]> {
+    // Suggestions not implemented in backend
+    return [];
   }
 }
 

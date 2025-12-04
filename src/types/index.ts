@@ -8,6 +8,7 @@ export interface SearchResult {
   type: 'web' | 'image';
   domain: string;
   publishedDate?: string;
+  relevance?: number; // TF-IDF score from our search engine
 }
 
 // Tipos para resultados de imágenes

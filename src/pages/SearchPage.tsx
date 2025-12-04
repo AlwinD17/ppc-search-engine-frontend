@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { SearchBar, ResultCard, Pagination, ImageGrid } from "../components";
+import { SearchBar, ResultCard, Pagination } from "../components";
 import { useSearch } from "../hooks";
 import type { SearchResult, ImageResult } from "../types";
 
@@ -11,15 +11,9 @@ const SearchPage: React.FC = () => {
 
   const {
     webState,
-    imageState,
     searchText,
-    searchImages,
-    searchByImage,
     setPage,
   } = useSearch();
-  const [searchType, setSearchType] = useState<"web" | "images">("web");
-
-  const activeState = searchType === "web" ? webState : imageState;
 
   useEffect(() => {
     if (initialQuery) {
@@ -28,24 +22,21 @@ const SearchPage: React.FC = () => {
   }, [initialQuery]);
 
   const handleSearch = (query: string) => {
-    if (searchType === "images") {
-      searchImages(query);
-    } else {
-      searchText(query);
-    }
+    searchText(query);
   };
 
-  const handleImageSearch = (image: File) => {
-    searchByImage(image);
-    setSearchType("images");
+  const handleImageSearch = (_image: File) => {
+    // Image search not supported
+    console.log("Image search not supported by this backend");
   };
 
   const handlePageChange = (page: number) => {
-    setPage(page, searchType);
+    setPage(page, "web");
   };
 
   const handleResultClick = (result: SearchResult | ImageResult) => {
-    window.open(result.url, "_blank", "noopener,noreferrer");
+    // For now, just show the filename since we're searching local HTML files
+    alert(`File: ${(result as SearchResult).domain}`);
   };
 
   return (
@@ -55,67 +46,32 @@ const SearchPage: React.FC = () => {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-foreground mb-4">
-              Resultados de búsqueda
+              PruSearch
             </h1>
             <p className="text-lg text-foreground opacity-70">
-              {searchType === "web"
-                ? "Resultados web"
-                : "Resultados de imágenes"}
+              Inverted Index + TF-IDF + N-gram Fuzzy Search
             </p>
           </div>
 
           <SearchBar
             onSearch={handleSearch}
             onImageSearch={handleImageSearch}
-            loading={activeState.loading}
-            placeholder={
-              searchType === "images"
-                ? "Buscar imágenes..."
-                : "Buscar en la web..."
-            }
+            loading={webState.loading}
+            placeholder="Search documents..."
           />
 
-          {/* Tabs de búsqueda */}
-          <div className="flex justify-center mt-8">
-            <div className="bg-background rounded-lg p-1">
-              <button
-                onClick={() => setSearchType("web")}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  searchType === "web"
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-foreground opacity-70 hover:opacity-100"
-                }`}
-              >
-                Web
-              </button>
-              <button
-                onClick={() => {
-                  setSearchType("images");
-                  if (!imageState.results.length && webState.query)
-                    searchImages(webState.query);
-                }}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  searchType === "images"
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-foreground opacity-70 hover:opacity-100"
-                }`}
-              >
-                Imágenes
-              </button>
+          {/* Stats */}
+          {webState.pagination.totalResults > 0 && (
+            <div className="text-center mt-6 text-sm text-foreground opacity-60">
+              Found {webState.pagination.totalResults} results for "{webState.query}"
             </div>
-          </div>
+          )}
         </div>
       </div>
 
-      {/* Resultados */}
-      <div
-        className={`${
-          searchType === "images"
-            ? "w-full px-2 sm:px-4 lg:px-6 py-8"
-            : "max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
-        }`}
-      >
-        {activeState.loading && (
+      {/* Results */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {webState.loading && (
           <div className="text-center py-12">
             <div className="inline-flex items-center space-x-2 text-foreground opacity-60">
               <svg
@@ -137,59 +93,41 @@ const SearchPage: React.FC = () => {
                   d="M4 12a8 8 0 018-8V0C5.37 0 0 5.37 0 12h4z"
                 />
               </svg>
-              <span>Buscando...</span>
+              <span>Searching...</span>
             </div>
           </div>
         )}
 
-        {activeState.error && (
+        {webState.error && (
           <div className="text-center py-12 text-primary">
-            {activeState.error}
+            {webState.error}
           </div>
         )}
 
-        {activeState.results.length > 0 && (
+        {webState.results.length > 0 && (
           <>
-            <div className="mb-6">
-              <p className="text-sm text-foreground opacity-70">
-                Aproximadamente{" "}
-                {activeState.pagination.totalResults.toLocaleString()}{" "}
-                resultados
-              </p>
-            </div>
-
             <div className="space-y-4">
-              {searchType === "images" ? (
-                <ImageGrid
-                  images={activeState.results as ImageResult[]}
-                  loading={activeState.loading}
-                  onImageClick={handleResultClick}
+              {webState.results.map((result) => (
+                <ResultCard
+                  key={result.id}
+                  result={result}
+                  onClick={handleResultClick}
                 />
-              ) : (
-                <div className="space-y-4">
-                  {activeState.results.map((result) => (
-                    <ResultCard
-                      key={result.id}
-                      result={result}
-                      onClick={handleResultClick}
-                    />
-                  ))}
-                </div>
-              )}
+              ))}
             </div>
 
             <Pagination
-              pagination={activeState.pagination}
+              pagination={webState.pagination}
               onPageChange={handlePageChange}
             />
           </>
         )}
 
-        {!activeState.loading &&
-          activeState.results.length === 0 &&
-          activeState.query && (
+        {!webState.loading &&
+          webState.results.length === 0 &&
+          webState.query && (
             <div className="text-center py-12 text-foreground opacity-60">
-              No se encontraron resultados
+              No results found
             </div>
           )}
       </div>
